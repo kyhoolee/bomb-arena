@@ -69,7 +69,10 @@ Lobby.prototype = {
 
 		var gameData = [{state: "empty"}, {state: "empty"}, {state: "joinable"}, {state: "insession"}];
 
+		console.log("Socket-emit:: enter-lobby");
 		socket.emit("enter lobby");
+
+		
 
 		if(!socket.hasListeners("add slots")) {
 			socket.on("add slots", this.addSlots.bind(this));
@@ -83,6 +86,7 @@ Lobby.prototype = {
 	},
 
 	addSlots: function(gameData) {
+		console.log('Add-slots: Lobby-game-data: ', gameData);
 		if(this.slots.length > 0)  // TODO: get rid of this
 			return;
 
@@ -100,7 +104,11 @@ Lobby.prototype = {
 			})(i, settings.callback);
 
 			var slotYOffset = initialSlotYOffset + i * lobbySlotDistance;
-			this.slots[i] = game.add.button(slotXOffset, slotYOffset, TEXTURES, callback, null, settings.overFrame, settings.outFrame);
+			this.slots[i] = game.add.button(
+				slotXOffset, slotYOffset, 
+				TEXTURES, 
+				callback, null, 
+				settings.overFrame, settings.outFrame);
 			this.slots[i].setDownSound(buttonClickSound);
 			
 			var text = game.add.text(slotXOffset + textXOffset, slotYOffset + textYOffset, settings.text);
@@ -123,6 +131,7 @@ Lobby.prototype = {
 	},
 
 	updateSlot: function(updateInfo) {
+		console.log('Update-slot: update-info: ', updateInfo);
 		var settings = this.stateSettings[updateInfo.newState];
 		var id = updateInfo.gameId;
 		var button = this.slots[id];

@@ -25,3 +25,7 @@ Open up your browser and navigate to localhost:8000/index.html.
 - Photoshop
 - Tiled
 - TexturePacker
+
+
+### Using nodemon
+https://stackoverflow.com/questions/34662574/node-js-getting-error-nodemon-internal-watch-failed-watch-enospc

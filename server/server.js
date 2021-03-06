@@ -2,6 +2,7 @@ var express = require("express");
 var app = express();
 var server = require("http").Server(app);
 
+// Global socket-io handler object
 io = require("socket.io").listen(server);
 TILE_SIZE = 40;
 
@@ -17,8 +18,8 @@ var PowerupIDs = require("../common/powerup_ids");
 
 var games = {};
 
-// Broadcasting loop works better than sending an update every time a player moves because waiting for player movement messages adds
-// another source of jitter.
+// Broadcasting loop works better than sending an update every time a player moves 
+// because waiting for player movement messages adds another source of jitter.
 var updateInterval = 100; // Broadcast updates every 100 ms.
 
 // Serve up index.html.
@@ -41,36 +42,72 @@ function setEventHandlers () {
 	io.on("connection", function(client) {
 		console.log("New player has connected: " + client.id);
 
+		// Process the event from client 
+
+		// 1. In-game event 
+
+		// 1.1. Client move player
 		client.on("move player", onMovePlayer);
+		// 1.2. Client disconnect
 		client.on("disconnect", onClientDisconnect);
+		// 1.3. Client player place bomb
 		client.on("place bomb", onPlaceBomb);
+		// 1.4. Client register map for game 
 		client.on("register map", onRegisterMap);
+		// 1.5. Client start game
 		client.on("start game on server", onStartGame);
+		// 1.6. Client ready for starting game 
 		client.on("ready for round", onReadyForRound);
+		// 1.7. Client player get power-up item
 		client.on("powerup overlap", onPowerupOverlap);
 
+		// 2. Lobby event
+
+		// 2.1. Client enter the lobby
 		client.on("enter lobby", Lobby.onEnterLobby);
+		// 2.2. Client host the game 
 		client.on("host game", Lobby.onHostGame);
+		// 2.3. Client select the stage for game 
 		client.on("select stage", Lobby.onStageSelect);
+		// 2.4. Client enter a pending game 
 		client.on("enter pending game", Lobby.onEnterPendingGame);
+		// 2.5. Client leave a pending game 
 		client.on("leave pending game", Lobby.onLeavePendingGame);
 	});
 };
 
+/**
+ * Handle client disconnect 
+ */
 function onClientDisconnect() {
+	// If no gameId --> do nothing 
+	// 'this' object is the client object - which handle this event
 	if (this.gameId == null) {
 		return;
 	}
 
+	// Get array of lobby slots 
 	var lobbySlots = Lobby.getLobbySlots();
 
+	// Check the lobby-slot of this gameId
 	if (lobbySlots[this.gameId].state == "joinable" || lobbySlots[this.gameId].state == "full") {
+		// Call the function declared in Lobby 
+		// --> which the function become the method of 'this' - the current client
+
+		// If the state of this slot is joinable or full and the event client disconnect happens
+		// --> Call the function handle event this client leave the pending game 
 		Lobby.onLeavePendingGame.call(this);
 	} else if (lobbySlots[this.gameId].state == "settingup") {
+		// If the state of this slot is setting-up
+		// This slot back to the empty state
 		lobbySlots[this.gameId].state = "empty";
-
+		// Update this slot data to all clients 
+		// - this slot defined by gameId - equal to the index of slot in the array 
 		Lobby.broadcastSlotStateUpdate(this.gameId, "empty");
 	} else if(lobbySlots[this.gameId].state == "inprogress") {
+		// If the slot game is in-progress
+
+		// Get the game by gameId
 		var game = games[this.gameId];
 	
 		if(this.id in game.players) {
